@@ -1,0 +1,11 @@
+[Unit]
+Description=blog daemon
+After=network.target
+
+[Service]
+WorkingDirectory=/www/blog
+ExecStart=/www/blog/venv/bin/gunicorn -w 1 -b 127.0.0.1:8080 app:app
+
+[Install]
+WantedBy=multi-user.target
+
