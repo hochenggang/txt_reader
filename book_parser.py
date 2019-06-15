@@ -4,6 +4,8 @@ import time
 import queue
 import threading
 
+import chardet
+
 from model.book.book import Book
 
 class Book_parser(object):
@@ -17,35 +19,38 @@ class Book_parser(object):
                     time.sleep(5)
                 else:
                     self.parser(book_info=self.Q.get())
-                    time.sleep(1)
+
         threading.Thread(target=loop).start()
         
 
     def parser(self,book_info=None):
         # 检查文本中的章卷节等结构
-        print("开始解析")
-        print(book_info)
         user_id = book_info["user_id"]
         book_id = book_info["book_id"]
         book_path = book_info["book_path"]
         # 打开文件
-        with open(book_path,"r",encoding="gb2312",errors="ignore")as f:
-            lines = "".join(f.readlines())
-            c = re.compile(r'\S{1,7}[卷章节]\s+.{1,30}\n?')
-            m = c.findall(lines)
-            l = c.split(lines)
-            del l[0]
-            if m and l:
-                for i in range(len(m)):
-                    title = m[i].replace("\n","")
-                    content = l[i]
-                    r = Book().new_chapter(book_id=book_id,chapter_index=i,chapter_title=title,chapter_content=content)
-                    if not r["code"] == 200:
-                        print("失败，{}，{}".format(i,title))
-                        break
-                    else:
-                        print(i)
-                Book().update_book(book_id=book_id,book_status=1)
-                print("解析完成")
+        with open(book_path,"rb")as f:
+            # 读取少量字节做编码测试
+            b = f.read(1024)
+            encoding = chardet.detect(b)["encoding"]
+            if not encoding:
+                # 不支持的编码类型
+                Book().update_book(book_id=book_id,book_status=-2)
+
             else:
-                print("正则匹配失败")
+                b = b + f.read()
+                lines = b.decode(encoding,'ignore')
+                c = re.compile(r'\S{1,10}?[章节卷回篇册集话]\s+.{1,31}?\n')
+                m = c.findall(lines)
+                l = c.split(lines)
+                if m and l:
+                    del l[0]
+                    for i in range(len(m)):
+                        title = m[i].replace("\n","")
+                        content = l[i]
+                        Book().new_chapter(book_id=book_id,chapter_index=i,chapter_title=title,chapter_content=content)
+                    # 解析完成
+                    Book().update_book(book_id=book_id,book_status=1)
+                else:
+                    # 正则匹配失败
+                    Book().update_book(book_id=book_id,book_status=-1)

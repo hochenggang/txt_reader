@@ -1,4 +1,4 @@
-0.0.0.0:80  {
+0.0.0.0:8080  {
     root C:\Users\cheng\Desktop\txt_reader\frontend
     proxy /api 127.0.0.1:8081 {
         transparent
