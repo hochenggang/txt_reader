@@ -37,7 +37,12 @@ def upload_book(**kwargs):
 
         # 查询该用户的上传量
 
-
+        # 新建文件记录
+        new_time = timestamp()
+        q = Book().new_book(user_id=user_id,book_id=file_md5,book_name=file_pure_name,book_size=file_size,book_status=0,book_upload_time=new_time)
+        if q["code"] != 200:
+            return "",500
+            
         # 写入文件
         save_to = os.path.join(FILE_PATH,user_id)
         if not os.path.isdir(save_to):
@@ -50,9 +55,6 @@ def upload_book(**kwargs):
             with open(file_to,'wb')as f:
                 f.write(file_stream)
         
-        # 新建文件记录
-        new_time = timestamp()
-        q = Book().new_book(user_id=user_id,book_id=file_md5,book_name=file_pure_name,book_size=file_size,book_status=0,book_upload_time=new_time)
         BOOK_PARSER.Q.put({
             "user_id":user_id,
             "book_id":file_md5,
