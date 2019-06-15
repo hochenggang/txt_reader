@@ -48,6 +48,7 @@ class Book_parser(object):
                     for i in range(len(m)):
                         title = m[i].replace("\n","")
                         content = l[i]
+                        time.sleep(0.1)
                         Book().new_chapter(book_id=book_id,chapter_index=i,chapter_title=title,chapter_content=content)
                     # 解析完成
                     Book().update_book(book_id=book_id,book_status=1)
