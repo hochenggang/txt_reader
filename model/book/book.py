@@ -17,15 +17,15 @@ Base = declarative_base()
 class Book_info(Base):
     """
     书籍模型
-    
     """
     __tablename__ = "book_info"
-    book_id = Column(String(32), primary_key=True)
+    id_ = Column(Integer, autoincrement=True, primary_key=True)
+    user_id = Column(String(32), index=True)
+    book_id = Column(String(32), index=True)
     book_name = Column(String(320), index=True)
     book_size = Column(Integer)
     book_status = Column(Integer)
     book_upload_time = Column(Integer)
-    user_id = Column(String(32), index=True)
 
 class Book_chapter(Base):
     """
@@ -33,7 +33,7 @@ class Book_chapter(Base):
     
     """
     __tablename__ = "book_chapter"
-    chapter_id = Column(Integer, autoincrement=True, primary_key=True)
+    id = Column(Integer, autoincrement=True, primary_key=True)
     chapter_content = Column(String(32000))
     chapter_title = Column(String(320))
     chapter_index = Column(Integer)
@@ -79,27 +79,58 @@ class Book:
         session.close()
         return {"code": 200}
 
-    def update_book(self,book_id=None,book_status=None):
+    def update_book_status(self,user_id=None,book_id=None,book_status=None):
         '''
         描述：更新书籍
         参数：
 
         返回：
             {"code": 200}
-            {"code": 4**, "errmsg":...}
 
         '''
         session = SESSION(bind=ENGINE.connect())
-        query = session.query(Book_info).filter(Book_info.book_id == book_id).first()
+        query = session.query(Book_info).filter(Book_info.book_id == book_id).all()
         if query:
             if book_status:
-                query.book_status = book_status
-
-        session.commit()
+                for q in query:
+                    q.book_status = book_status
+                session.commit()
         session.close()
         return {"code": 200}
 
-    def books(self,user_id=None):
+    def is_book(self,book_id=None,user_id=None,book_status=None):
+        '''
+        描述：检查是否存在该书籍
+        参数：
+            book_id
+            user_id
+            book_status
+            可选查询组合 (book_id)(book_id + user_id)(book_id + book_status)
+
+        返回：
+            {"code": 200}
+            {"code": 404, "errmsg":...}
+
+        '''
+        session = SESSION(bind=ENGINE.connect())
+        if bool(book_id) and bool(bool(not user_id) and bool(not book_status)):
+            query = session.query(Book_info).filter(Book_info.book_id == book_id).first()
+        elif bool(bool(book_status) and bool(book_id)) and bool(not bool(user_id)):
+            query = session.query(Book_info).filter(and_(Book_info.book_id == book_id,Book_info.book_status == book_status)).first()
+        elif bool(bool(book_id) and bool(user_id)) and bool(not bool(book_status)):
+            query = session.query(Book_info).filter(and_(Book_info.book_id == book_id,Book_info.user_id == user_id)).first()
+        else:
+            query = None
+        
+  
+        session.close()
+        if query:
+            return {"code":200,"query":query}
+        else:
+            return {"code": 404, "errmsg":"该书籍不存在"}
+
+
+    def get_book_list(self,user_id=None):
         '''
         描述：查询用户的书籍
         参数：
@@ -110,7 +141,6 @@ class Book:
             {"code": 4**, "errmsg":...}
 
         '''
-        
         session = SESSION(bind=ENGINE.connect())
         query = session.query(Book_info).filter(Book_info.user_id == user_id).all()
         session.close()
@@ -118,6 +148,7 @@ class Book:
             return {"code": 404, "errmsg":"未找到书籍"}
         else:
             return {"code": 200,"query":query}
+
 
     def new_chapter(self,book_id=None,chapter_index=None,chapter_title=None,chapter_content=None):
         '''
@@ -142,11 +173,12 @@ class Book:
         session.close()
         return {"code": 200}
 
-    def catalogue(self,book_id=None):
+
+    def get_catalogue(self,book_id=None):
         '''
-        描述：查询用户的书籍
+        描述：查询书籍的目录
         参数：
-            user_id String(32)
+            book_id String(32)
 
         返回：
             {"code": 200,"query":query}

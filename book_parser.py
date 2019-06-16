@@ -28,6 +28,8 @@ class Book_parser(object):
         user_id = book_info["user_id"]
         book_id = book_info["book_id"]
         book_path = book_info["book_path"]
+
+        
         # 打开文件
         with open(book_path,"rb")as f:
             # 读取少量字节做编码测试
@@ -35,7 +37,7 @@ class Book_parser(object):
             encoding = chardet.detect(b)["encoding"]
             if not encoding:
                 # 不支持的编码类型
-                Book().update_book(book_id=book_id,book_status=-2)
+                Book().update_book_status(user_id=user_id,book_id=book_id,book_status=-2)
 
             else:
                 b = b + f.read()
@@ -48,10 +50,10 @@ class Book_parser(object):
                     for i in range(len(m)):
                         title = m[i].replace("\n","")
                         content = l[i]
-                        time.sleep(0.1)
+                        time.sleep(0.05)
                         Book().new_chapter(book_id=book_id,chapter_index=i,chapter_title=title,chapter_content=content)
                     # 解析完成
-                    Book().update_book(book_id=book_id,book_status=1)
+                    Book().update_book_status(user_id=user_id,book_id=book_id,book_status=1)
                 else:
                     # 正则匹配失败
-                    Book().update_book(book_id=book_id,book_status=-1)
+                    Book().update_book_status(user_id=user_id,book_id=book_id,book_status=-1)
