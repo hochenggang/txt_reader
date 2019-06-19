@@ -1,8 +1,8 @@
-0.0.0.0:8080  {
-    root C:\Users\cheng\Desktop\txt_reader\frontend
+domain  {
+    root /path/to/frontend/dist
     proxy /api 127.0.0.1:8081 {
         transparent
     }
     gzip
-    limits 20mb
+    limits 30mb
 }
